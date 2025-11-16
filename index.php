@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fi">
 <head>
@@ -6,7 +7,7 @@
     <title>LEMP-palvelin</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
-        
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Poppins', sans-serif;
@@ -90,7 +91,10 @@
         </div>
 
         <p>Kellonaika haetaan reaaliajassa tietokannasta.</p>
-        
+        <p style="margin: 25px 0; text-align: center;">
+                <a href="/data-analysis/" style="background: #4a90e2; color: white; padding: 14px 28px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size 1.1rem; display: inline-block;">
+                        Avaa data analyysi sovellus </a>
+        </p>
         <div class="footer">
             <p>Tehty GitHubilla • <a href="https://github.com/aleksijohan/lemp_website" style="color:#ffd700;">Näytä koodi</a></p>
             <p>©DoxeIt</p>
