@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/mqtt@5.7.0/dist/mqtt.min.js"></script>
+    <style>
+        body {font-family: system-ui; background:#1e1e2e; color:#cdd6f4; margin:0; padding:20px;}
+        h1 {text-align:center; color:#89b4fa;}
+        #messages {background:#313244; height:70vh; overflow-y:auto; padding:15px; border-radius:12px; margin-bottom:15px;}
+        #messages p {margin:8px 0; padding:8px 12px; background:#45475a; border-radius:8px; max-width:80%;}
+        #messages small {color:#94e2d5; font-size:0.8em;}
+        .input-area {display:flex; gap:8px;}
+        input {flex:1; padding:14px; border:none; border-radius:25px; font-size:16px; background:#313244; color:white;}
+        button {padding:14px 24px; border:none; background:#89b4fa; color:#1e1e2e; border-radius:25px; cursor:pointer;}
+        button:hover {background:#74c7ec;}
+        #status {text-align:center; font-size:0.9em; margin:10px 0;}
+    </style>
+</head>
+<body>
+    <h1>MQTT Reaaliaikainen Chat</h1>
+    <div id="status">Yhdistetään MQTT:hen...</div>
+    <div id="messages"></div>
+    <div class="input-area">
+        <input type="text" id="msg" placeholder="Kirjoita viesti..." autocomplete="off">
+        <button id="sendBtn">Lähetä</button>
+    </div>
+
+    <script>
+        const chat = document.getElementById('messages');
+        const input = document.getElementById('msg');
+        const status = document.getElementById('status');
+        const sendBtn = document.getElementById('sendBtn');
+        let client = null;
+
+        // Lataa 10 viimeisintä viestiä tietokannasta
+        async function loadHistory() {
+            try {
+                const res = await fetch('/chat/get_messages.php');
+                const data = await res.json();
+                data.forEach(m => addMessage(m.message, m.time));
+            } catch(e) {
+                console.log("Historiaa ei ladattu (vielä ei viestejä?)");
+            }
+        }
+
+        // Lisää viesti chattiin
+        function addMessage(text, time = null) {
+            const p = document.createElement('p');
+            const t = time || new Date().toLocaleTimeString('fi-FI', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            p.innerHTML = `<small>${t}</small> ${text}`;
+            chat.appendChild(p);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Lähetä viesti
+        function sendMessage() {
+            const text = input.value.trim();
+            if (text && client && client.connected) {
+                client.publish('chat', text);
+                input.value = '';
+            }
+        }
+
+        // Yhdistä MQTT:hen WebSocketin yli
+        function connectMQTT() {
+            const url = `ws://${location.host}/chat/ws`;
+            client = mqtt.connect(url, {
+                keepalive: 30,
+                reconnectPeriod: 3000
+            });
+
+            client.on('connect', () => {
+                status.textContent = "Yhdistetty MQTT:hen";
+                status.style.color = "#a6e3a1";
+                client.subscribe('chat');
+                loadHistory();
+            });
+
+            client.on('message', (topic, payload) => {
+                addMessage(payload.toString());
+            });
+
+            client.on('error', (err) => {
+                status.textContent = "Yhteysvirhe: " + err.message;
+                status.style.color = "#f38ba8";
+            });
+
+            client.on('offline', () => {
+                status.textContent = "Ei yhteyttä – yritetään uudelleen...";
+                status.style.color = "#f9e2af";
+            });
+        }
+
+        // Käynnistä yhteys
+        connectMQTT();
+
+        // Lähetä nappi ja Enter
+        sendBtn.addEventListener('click', sendMessage);
+        input.addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
